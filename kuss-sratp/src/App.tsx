@@ -8,49 +8,16 @@ import StakeCommitee from './components/StakeCommitee'
 import Student from './components/Student'
 import StakePresident from './components/StakePresident'
 import Instructor from './components/Instructor'
+import { useAuth } from './contexts/AuthContext'
 import './App.css'
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const { user, isAuthenticated, isLoading, logout, tokenExpiry, timeUntilExpiry, showExpiryWarning } = useAuth()
   const [showMenu, setShowMenu] = useState(false)
-  const [currentUser, setCurrentUser] = useState<string>('')
 
-  const handleLogin = async (username: string, password: string) => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Simple validation - in real app, this would be an API call
-    if (username === 'bishop' && password === 'password') {
-      setIsAuthenticated(true)
-      setCurrentUser('bishop')
-    } else if (username === 'EQ' && password === 'password') {
-      setIsAuthenticated(true)
-      setCurrentUser('EQ')
-    } else if (username === 'stakerep' && password === 'password') {
-      setIsAuthenticated(true)
-      setCurrentUser('stakerep')
-    } else if (username === 'stakecom' && password === 'password') {
-      setIsAuthenticated(true)
-      setCurrentUser('stakecom')
-    } else if (username === 'stakepres' && password === 'password') {
-      setIsAuthenticated(true)
-      setCurrentUser('stakepres')
-    } else if (username === 'instructor' && password === 'password') {
-      setIsAuthenticated(true)
-      setCurrentUser('instructor')
-    } else if (username === 'student' && password === 'password') {
-      setIsAuthenticated(true)
-      setCurrentUser('student')
-    }
-    else {
-      throw new Error('Invalid credentials')
-    }
-  }
-
-  const handleLogout = () => {
-    setIsAuthenticated(false)
+  const handleLogout = async () => {
+    await logout()
     setShowMenu(false)
-    setCurrentUser('')
   }
 
   const handleUpdateProfile = () => {
@@ -65,9 +32,53 @@ function App() {
     setShowMenu(false)
   }
 
-  if (isAuthenticated) {
+  // Format time until expiry
+  const formatTimeUntilExpiry = (milliseconds: number): string => {
+    const minutes = Math.floor(milliseconds / (1000 * 60));
+    const hours = Math.floor(minutes / 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    }
+    return `${minutes}m`;
+  };
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isAuthenticated && user) {
     return (
       <>
+        {/* Token Expiry Warning Banner */}
+        {showExpiryWarning && (
+          <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500 text-yellow-900 px-4 py-3 text-center">
+            <div className="flex items-center justify-center space-x-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <span className="font-semibold">
+                Your session will expire soon! 
+                {timeUntilExpiry && ` (${formatTimeUntilExpiry(timeUntilExpiry)} remaining)`}
+              </span>
+              <button
+                onClick={() => window.location.reload()}
+                className="ml-4 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors duration-200"
+              >
+                Refresh Session
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Ellipsis Menu */}
         <div className="fixed left-6 top-6 z-50">
           <div className="relative">
@@ -85,7 +96,19 @@ function App() {
               <div className="absolute left-0 top-12 bg-white rounded-xl shadow-2xl border border-teal-200 min-w-56 py-2 z-50">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-semibold text-teal-600">User Menu</p>
-                  <p className="text-xs text-gray-500">Logged in as: {currentUser}</p>
+                  <p className="text-xs text-gray-500">Logged in as: {user.email}</p>
+                  <p className="text-xs text-gray-500">Role: {user.role}</p>
+                  {tokenExpiry && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Session expires: {tokenExpiry.toLocaleTimeString()}
+                    </p>
+                  )}
+                  {timeUntilExpiry && (
+                    <p className={`text-xs ${timeUntilExpiry < 30 * 60 * 1000 ? 'text-red-500' : 'text-gray-500'}`}>
+                      {timeUntilExpiry < 30 * 60 * 1000 ? '⚠️ ' : ''}
+                      {formatTimeUntilExpiry(timeUntilExpiry)} remaining
+                    </p>
+                  )}
                 </div>
                 
                 <button
@@ -133,18 +156,34 @@ function App() {
         )}
 
         {/* Render appropriate dashboard based on user role */}
-        {currentUser === 'bishop' && <Bishop />}
-        {currentUser === 'EQ' && <EQ />}
-        {currentUser === 'stakerep' && <StakeRepresentative />}
-        {currentUser === 'stakecom' && <StakeCommitee />}
-        {currentUser === 'stakepres' && <StakePresident />}
-        {currentUser === 'instructor' && <Instructor />}
-        {currentUser === 'student' && <Student />}
+        {user.role === 'bishop' && <Bishop />}
+        {user.role === "eq" && <EQ />}
+        {user.role === 'stake_representative' && <StakeRepresentative />}
+        {user.role === 'stake_committee' && <StakeCommitee />}
+        {user.role === 'stake_president' && <StakePresident />}
+        {user.role === 'instructor' && <Instructor />}
+        {user.role === 'student' && <Student />}
+        
+        {/* Fallback for unknown roles */}
+        {!['bishop', 'eq', 'stake_representative', 'stake_committee', 'stake_president', 'instructor', 'student'].includes(user.role) && (
+          <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-800 mb-4">Unknown Role</h1>
+              <p className="text-gray-600 mb-4">Your role "{user.role}" is not recognized.</p>
+              <button
+                onClick={handleLogout}
+                className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
       </>
     )
   }
 
-  return <Login onLogin={handleLogin} />
+  return <Login onLogin={useAuth().login} />
 }
 
 export default App
