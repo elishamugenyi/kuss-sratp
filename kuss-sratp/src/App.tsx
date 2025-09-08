@@ -183,7 +183,7 @@ function App() {
     )
   }
 
-  return <Login onLogin={useAuth().login} />
+  return <Login />
 }
 
 export default App
