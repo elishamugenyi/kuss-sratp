@@ -136,6 +136,17 @@ interface GetParticipantsResponse {
   data: any;
   error?: string;
 }
+
+interface StakeReportItem {
+  // Flexible typing to accommodate varying backend shapes
+  [key: string]: any;
+}
+
+interface GetStakeReportsResponse {
+  success?: boolean;
+  data?: StakeReportItem[];
+  error?: string;
+}
 class ApiService {
   private baseUrl = config.API_BASE_URL;
   private token: string | null = null;
@@ -494,7 +505,7 @@ class ApiService {
 
   //fetch users
   async fetchUsers(): Promise<User[]> {
-    const response = await fetch(`${this.baseUrl}$/auth/add_user`, {
+    const response = await fetch(`${this.baseUrl}${config.API_ENDPOINTS.ADD_USER}`, {
       method: 'GET',
       headers: this.getHeaders(),
       credentials: 'include',
@@ -928,6 +939,33 @@ class ApiService {
       return data;
     } catch (error) {
       console.error('Search participants by email error:', error);
+      throw error;
+    }
+  }
+
+  // =====================================================
+  // STAKE REPORTS
+  // =====================================================
+  async getStakeReports(): Promise<StakeReportItem[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}${config.API_ENDPOINTS.STAKE_REPORTS}`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch stake reports');
+      }
+      const payload: GetStakeReportsResponse | StakeReportItem[] = await response.json();
+      if (Array.isArray(payload)) return payload as StakeReportItem[];
+      if (payload && payload.success && Array.isArray(payload.data)) return payload.data as StakeReportItem[];
+      // Some backends return { data: [...] } without success flag
+      // @ts-ignore
+      if (payload && Array.isArray(payload.data)) return (payload as any).data as StakeReportItem[];
+      return [];
+    } catch (error) {
+      console.error('Get stake reports error:', error);
       throw error;
     }
   }

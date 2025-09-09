@@ -30,7 +30,12 @@ export const config = {
     
     // Legacy attendance endpoints (keeping for backward compatibility)
     ATTENDANCE: '/group/attendance',
-    GET_ALL_ATTENDANCE_FOR_GROUP: '/group/attendance'
+    GET_ALL_ATTENDANCE_FOR_GROUP: '/group/attendance',
+
+    // =====================================================
+    // STAKES ENDPOINTS
+    // =====================================================
+    STAKE_REPORTS: '/group/stake_reports'
   },
 } as const;
 

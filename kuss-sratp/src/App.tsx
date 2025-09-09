@@ -158,14 +158,14 @@ function App() {
         {/* Render appropriate dashboard based on user role */}
         {user.role === 'bishop' && <Bishop />}
         {user.role === "eq" && <EQ />}
-        {user.role === 'stake_representative' && <StakeRepresentative />}
-        {user.role === 'stake_committee' && <StakeCommitee />}
-        {user.role === 'stake_president' && <StakePresident />}
+        {user.role === 'stake_rep' && <StakeRepresentative />}
+        {user.role === 'stake_comm' && <StakeCommitee />}
+        {user.role === 'stake_pres' && <StakePresident />}
         {user.role === 'instructor' && <Instructor />}
         {user.role === 'student' && <Student />}
         
         {/* Fallback for unknown roles */}
-        {!['bishop', 'eq', 'stake_representative', 'stake_committee', 'stake_president', 'instructor', 'student'].includes(user.role) && (
+        {!['bishop', 'eq', 'stake_rep', 'stake_comm', 'stake_pres', 'instructor', 'student'].includes(user.role) && (
           <div className="min-h-screen bg-white flex items-center justify-center">
             <div className="text-center">
               <h1 className="text-2xl font-bold text-gray-800 mb-4">Unknown Role</h1>
